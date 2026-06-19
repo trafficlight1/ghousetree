@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://list.pidsvitu.com/sitemap.xml
