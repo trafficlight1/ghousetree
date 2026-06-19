@@ -1,0 +1,822 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <!-- ── SEO / Indexing ─────────────────────────────────────── -->
+    <title>Земний покрив Львова — Google Engine | Підсвітити ліхтар</title>
+    <meta name="description" content="Інтерактивна карта земного покриву, типів забудови та нової урбанізації Львова за супутниковими даними ESA WorldCover та Dynamic World (Google).">
+    <meta name="keywords" content="ESA WorldCover, Dynamic World, Google Earth Engine, земний покрив Львова, типи забудови, нова забудова, land cover, Lviv, pidsvitu">
+    <meta name="author" content="Підсвітити ліхтар">
+    <meta name="robots" content="index, follow">
+    <link rel="canonical" href="https://list.pidsvitu.com/google-engine.html">
+
+    <link rel="icon" type="image/png" href="logo2.png">
+    <link rel="apple-touch-icon" href="logo2.png">
+
+    <!-- Open Graph -->
+    <meta property="og:title" content="Земний покрив Львова — Google Engine">
+    <meta property="og:description" content="Карта земного покриву та забудови Львова за даними ESA WorldCover і Dynamic World">
+    <meta property="og:image" content="https://list.pidsvitu.com/fnaf.png">
+    <meta property="og:image:width" content="1200">
+    <meta property="og:image:height" content="630">
+    <meta property="og:url" content="https://list.pidsvitu.com/google-engine.html">
+    <meta property="og:type" content="website">
+    <meta property="og:site_name" content="Підсвітити ліхтар">
+    <meta property="og:locale" content="uk_UA">
+    <meta property="og:locale:alternate" content="en_US">
+
+    <!-- Twitter -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="Земний покрив Львова — Google Engine">
+    <meta name="twitter:description" content="Карта земного покриву та забудови Львова">
+    <meta name="twitter:image" content="https://list.pidsvitu.com/fnaf.png">
+
+    <script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
+    <link href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css" rel="stylesheet">
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;700;800&display=swap" rel="stylesheet">
+
+    <style>
+        body { margin: 0; padding: 0; background-color: #000; font-family: 'Manrope', sans-serif; overflow: hidden; position: fixed; width: 100%; height: 100%; }
+        #map { position: absolute; top: 0; bottom: 0; width: 100%; z-index: 1; }
+        a { -webkit-tap-highlight-color: transparent; }
+
+        /* ══════════════════ NAVBAR (gm-nav) ══════════════════ */
+        .gm-nav {
+          position: fixed; top: 0; left: 0; right: 0; z-index: 9999;
+          height: 83px; display: flex; align-items: center; justify-content: space-between;
+          padding: 0 2rem;
+          background: rgba(10, 10, 10, 0.55);
+          backdrop-filter: blur(24px) saturate(160%);
+          -webkit-backdrop-filter: blur(24px) saturate(160%);
+          border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+          transition: background 0.35s ease, border-color 0.35s ease;
+        }
+        .gm-nav--scrolled { background: rgba(14, 14, 14, 0.78); border-bottom-color: rgba(255, 255, 255, 0.12); }
+
+        .gm-nav__left { display: flex; align-items: center; gap: 1.75rem; flex: 1; }
+        .gm-nav__link {
+          color: rgba(255, 255, 255, 0.88); font-size: 0.775rem; font-weight: 400;
+          letter-spacing: 0.035em; text-decoration: none; white-space: nowrap;
+          font-family: "Helvetica Neue", Arial, sans-serif; transition: color 0.2s ease;
+        }
+        .gm-nav__link:hover { color: #ffffff; }
+
+        .gm-nav__center { position: absolute; left: 50%; transform: translateX(-50%); pointer-events: none; }
+        .gm-nav__logo { pointer-events: auto; text-decoration: none; display: flex; align-items: center; }
+        .gm-nav__logo-img { height: 53px; width: auto; display: block; }
+
+        .gm-nav__right { display: flex; align-items: center; gap: 0.25rem; flex: 1; justify-content: flex-end; }
+        .gm-nav__icon-btn {
+          background: none; border: none; color: rgba(255, 255, 255, 0.88); cursor: pointer;
+          padding: 0.45rem; display: flex; align-items: center; justify-content: center;
+          border-radius: 50%; transition: color 0.2s ease, background-color 0.2s ease;
+        }
+        .gm-nav__icon-btn:hover { color: #ffffff; background-color: rgba(255, 255, 255, 0.1); }
+
+        .gm-nav__lang {
+          font-family: "Helvetica Neue", Arial, sans-serif; font-size: 0.72rem; font-weight: 600;
+          letter-spacing: 0.08em; min-width: 2.4rem; padding: 0.4rem 0.55rem; border-radius: 999px;
+          border: 1px solid rgba(255, 255, 255, 0.25); line-height: 1;
+        }
+        .gm-nav__hamburger { display: none; }
+
+        /* Mobile full-screen menu */
+        .gm-mobile-menu {
+          position: fixed; inset: 55px 0 0 0; z-index: 9998;
+          background: rgba(8, 8, 8, 0.97); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+          display: flex; flex-direction: column; justify-content: center; align-items: center;
+          transform: translateY(-8px); opacity: 0; pointer-events: none;
+          transition: opacity 0.3s ease, transform 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .gm-mobile-menu--open { transform: translateY(0); opacity: 1; pointer-events: auto; }
+        .gm-mobile-menu__link {
+          color: rgba(255, 255, 255, 0.8); font-size: 1.65rem; font-weight: 300; letter-spacing: 0.06em;
+          text-decoration: none; padding: 0.9rem 2rem; display: block; text-align: center;
+          font-family: "Helvetica Neue", Arial, sans-serif; transition: color 0.2s ease;
+        }
+        .gm-mobile-menu__link:hover { color: #ffffff; }
+
+        @media (max-width: 767px) {
+          .gm-nav__left { display: none; }
+          .gm-nav__hamburger { display: flex; }
+          .gm-nav { height: 55px; }
+          .gm-nav__logo-img { height: 35px; }
+        }
+        @media (max-width: 480px) { .gm-nav { padding: 0 1rem; } }
+
+        /* ══════════════════ FOOTER (gmf) ══════════════════ */
+        .gmf__overlay {
+          position: fixed; bottom: 52px; left: 0; right: 0; background: #0a0a0a;
+          height: 0; overflow: hidden; transition: height 0.15s ease; z-index: 1099; pointer-events: none;
+        }
+        .gmf {
+          position: fixed; bottom: 0; left: 0; right: 0; z-index: 1100;
+          width: 100%; height: 52px; display: flex; align-items: center; justify-content: space-between;
+          padding: 0 2rem; background: #0a0a0a; border-top: 1px solid rgba(255, 255, 255, 0.08);
+          font-family: "Helvetica Neue", Arial, sans-serif; box-sizing: border-box; overflow: visible;
+        }
+        .gmf::after {
+          content: ''; position: absolute; bottom: 0; left: 0; right: 0; height: 1px;
+          background: rgba(255, 255, 255, 0.9); transform: scaleX(0); transform-origin: left;
+          transition: transform 0.25s ease; pointer-events: none;
+        }
+        .gmf:has(.gmf__nav-item:hover)::after { transform: scaleX(1); }
+
+        .gmf__left { display: flex; align-items: center; gap: 0.1rem; flex: 1; min-width: 0; }
+        .gmf__nav-item { position: relative; }
+        .gmf__nav-trigger {
+          color: rgba(255, 255, 255, 0.5); font-size: 0.72rem; font-weight: 400; letter-spacing: 0.03em;
+          cursor: pointer; padding: 0.3rem 0.65rem; transition: color 0.15s ease; white-space: nowrap;
+          user-select: none; display: block;
+        }
+        .gmf__nav-item:hover .gmf__nav-trigger { color: #ffffff; }
+
+        .gmf__dropdown {
+          position: absolute; bottom: calc(100% + 2px); left: 0; min-width: 150px; background: transparent;
+          padding: 0.5rem 0 0.6rem; display: flex; flex-direction: column; opacity: 0; transform: translateY(4px);
+          pointer-events: none; transition: opacity 0.15s ease, transform 0.15s ease; z-index: 1100;
+        }
+        .gmf__nav-item:hover .gmf__dropdown { opacity: 1; transform: translateY(0); pointer-events: auto; }
+        .gmf__dropdown-link {
+          color: rgba(255, 255, 255, 0.45); font-size: 0.72rem; font-weight: 400; letter-spacing: 0.03em;
+          text-decoration: none; padding: 0.3rem 0; white-space: nowrap; transition: color 0.15s ease; line-height: 1.6;
+        }
+        .gmf__dropdown-link:hover { color: #ffffff; }
+
+        .gmf__center { position: absolute; left: 50%; transform: translateX(-50%); }
+        .gmf__email-cta {
+          color: rgba(255, 255, 255, 0.5); font-size: 0.72rem; letter-spacing: 0.03em;
+          text-decoration: none; white-space: nowrap; transition: color 0.15s ease;
+        }
+        .gmf__email-cta:hover { color: #ffffff; }
+
+        .gmf__right { display: flex; align-items: center; gap: 1.25rem; flex: 1; justify-content: flex-end; }
+        .gmf__logo-link { display: flex; align-items: center; text-decoration: none; }
+        .gmf__logo { height: 20px; width: auto; display: block; opacity: 0.7; transition: opacity 0.15s ease; }
+        .gmf__logo-link:hover .gmf__logo { opacity: 1; }
+        .gmf__partners { display: flex; align-items: center; gap: 1rem; }
+        .gmf__partner {
+          height: 20px; width: auto; display: block; opacity: 0.4;
+          filter: brightness(0) invert(1); transition: opacity 0.15s ease;
+        }
+        .gmf__partner:hover { opacity: 0.85; }
+
+        @media (max-width: 900px) {
+          .gmf { padding: 0 1.25rem; }
+          .gmf__partners { gap: 0.65rem; }
+        }
+        @media (max-width: 640px) {
+          .gmf__center, .gmf__email-cta { display: none; }
+          .gmf__nav-trigger { padding: 0.3rem 0.4rem; font-size: 0.68rem; }
+          .gmf__right { gap: 0.75rem; }
+        }
+        @media (max-width: 420px) {
+          .gmf__nav-item:nth-child(n+3) { display: none; }
+        }
+
+        /* ══════════════════ LAYER SWITCH PANEL (glass) ══════════════════ */
+        .ui-wrapper {
+            position: absolute; bottom: 70px; left: 50%; transform: translateX(-50%);
+            display: flex; flex-direction: column; align-items: center; width: 100%;
+            z-index: 20; pointer-events: none;
+        }
+        .controls {
+            position: relative;
+            background: rgba(16, 16, 18, 0.55);
+            backdrop-filter: blur(22px) saturate(160%);
+            -webkit-backdrop-filter: blur(22px) saturate(160%);
+            padding: 14px 16px; border-radius: 40px;
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            box-shadow: 0 8px 40px rgba(0, 0, 0, 0.45);
+            width: fit-content; max-width: 95%;
+            display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; pointer-events: auto;
+        }
+        .layer-btn {
+            background: transparent; border: 1px solid rgba(255, 255, 255, 0.22); color: #fff;
+            padding: 10px 18px; border-radius: 22px; cursor: pointer; font-size: 13px;
+            font-family: 'Manrope', sans-serif; font-weight: 500; letter-spacing: 0.02em;
+            text-transform: uppercase; transition: all 0.25s ease; min-width: 80px;
+            display: flex; align-items: center; gap: 8px; white-space: nowrap;
+        }
+        .layer-btn .dot { width: 9px; height: 9px; border-radius: 50%; flex: 0 0 auto; box-shadow: 0 0 8px currentColor; }
+        .layer-btn:hover { border-color: rgba(255, 255, 255, 0.7); box-shadow: 0 0 14px rgba(255, 255, 255, 0.12); }
+        .layer-btn.active { background: #fff; color: #000; font-weight: 700; box-shadow: 0 0 18px rgba(255, 255, 255, 0.4); border-color: #fff; }
+
+        /* ══════════════════ INFO PANEL (glass) ══════════════════ */
+        .info-panel {
+            position: fixed; top: 103px; right: 20px; z-index: 30; width: 320px; max-width: calc(100vw - 40px);
+            background: rgba(16, 16, 18, 0.55);
+            backdrop-filter: blur(26px) saturate(160%);
+            -webkit-backdrop-filter: blur(26px) saturate(160%);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            border-radius: 22px; box-shadow: 0 12px 50px rgba(0, 0, 0, 0.5);
+            color: #fff; overflow: hidden;
+            transition: transform 0.4s cubic-bezier(0.25, 1, 0.5, 1), opacity 0.3s ease;
+        }
+        .info-panel__head {
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 18px 20px 12px; gap: 10px;
+        }
+        .info-panel__title { font-size: 1.05rem; font-weight: 800; letter-spacing: 0.01em; line-height: 1.2; }
+        .info-panel__toggle {
+            background: none; border: none; color: rgba(255,255,255,0.7); cursor: pointer; padding: 4px;
+            display: flex; align-items: center; transition: color 0.2s ease, transform 0.3s ease;
+        }
+        .info-panel__toggle:hover { color: #fff; }
+        .info-panel__body { padding: 0 20px 18px; max-height: calc(100vh - 320px); overflow-y: auto; }
+        .info-panel__desc { font-size: 0.82rem; line-height: 1.55; color: rgba(255, 255, 255, 0.82); margin: 0 0 14px; }
+
+        /* Opacity slider */
+        .opacity-ctl { margin: 0 0 16px; }
+        .opacity-ctl__row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
+        .opacity-ctl__label { font-size: 0.7rem; letter-spacing: 0.05em; text-transform: uppercase; color: rgba(255,255,255,0.6); }
+        .opacity-ctl__val { font-size: 0.72rem; font-weight: 700; color: #fff; font-variant-numeric: tabular-nums; }
+        .opacity-range {
+            -webkit-appearance: none; appearance: none; width: 100%; height: 4px; border-radius: 4px;
+            background: rgba(255, 255, 255, 0.18); outline: none; cursor: pointer; margin: 0;
+        }
+        .opacity-range::-webkit-slider-thumb {
+            -webkit-appearance: none; appearance: none; width: 16px; height: 16px; border-radius: 50%;
+            background: #fff; box-shadow: 0 0 10px rgba(255, 255, 255, 0.6); border: none; cursor: pointer;
+        }
+        .opacity-range::-moz-range-thumb {
+            width: 16px; height: 16px; border-radius: 50%; background: #fff;
+            box-shadow: 0 0 10px rgba(255, 255, 255, 0.6); border: none; cursor: pointer;
+        }
+
+        .legend { display: flex; flex-direction: column; gap: 8px; margin-bottom: 16px; }
+        .legend__item { display: flex; align-items: center; gap: 10px; font-size: 0.78rem; color: rgba(255,255,255,0.88); }
+        .legend__swatch { width: 16px; height: 16px; border-radius: 4px; flex: 0 0 auto; border: 1px solid rgba(255,255,255,0.18); }
+        .legend__label b { font-weight: 700; color: #fff; }
+
+        .info-panel__src {
+            border-top: 1px solid rgba(255, 255, 255, 0.1); padding-top: 12px; margin-top: 4px;
+            font-size: 0.68rem; line-height: 1.5; color: rgba(255, 255, 255, 0.5);
+        }
+        .info-panel__src .tag {
+            display: inline-block; font-family: "Helvetica Neue", Arial, sans-serif; font-weight: 600;
+            letter-spacing: 0.04em; color: rgba(255,255,255,0.85); border: 1px solid rgba(255,255,255,0.2);
+            border-radius: 999px; padding: 2px 9px; margin-bottom: 7px; font-size: 0.64rem;
+        }
+        .info-panel__src a { color: rgba(255,255,255,0.7); }
+
+        .info-panel.collapsed .info-panel__body { display: none; }
+        .info-panel.collapsed .info-panel__toggle { transform: rotate(180deg); }
+
+        /* Loading hint */
+        .loading-hint {
+            position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 25;
+            color: rgba(255,255,255,0.85); font-size: 0.85rem; letter-spacing: 0.04em; text-align: center;
+            pointer-events: none; opacity: 0; transition: opacity 0.3s ease;
+            background: rgba(16,16,18,0.55); backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px);
+            border: 1px solid rgba(255,255,255,0.12); border-radius: 14px; padding: 12px 20px;
+        }
+        .loading-hint.visible { opacity: 1; }
+
+        @media (max-width: 767px) {
+            .ui-wrapper { bottom: 132px; }
+            .controls { width: 92%; display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; padding: 12px; border-radius: 22px; }
+            .layer-btn { width: 100%; font-size: 11px; padding: 9px 4px; border-radius: 14px; min-width: auto; justify-content: center; }
+            .layer-btn .dot { display: none; }
+            .info-panel {
+                top: auto; bottom: 64px; left: 0; right: 0; width: 100%; max-width: 100%;
+                border-radius: 22px 22px 0 0; border-bottom: none;
+            }
+            .info-panel__body { max-height: 34vh; }
+            .info-panel.collapsed { transform: translateY(0); }
+        }
+    </style>
+</head>
+<body>
+
+<!-- ══════════════════ NAVBAR ══════════════════ -->
+<header class="gm-nav" id="gm-nav">
+    <nav class="gm-nav__left" id="nav-left" aria-label="Main navigation"></nav>
+
+    <div class="gm-nav__center">
+        <a href="https://www.pidsvitu.com/" class="gm-nav__logo">
+            <img src="LOGO_WHITE.svg" alt="Підсвітити ліхтар" class="gm-nav__logo-img">
+        </a>
+    </div>
+
+    <div class="gm-nav__right">
+        <button class="gm-nav__icon-btn gm-nav__lang" id="lang-btn" aria-label="Switch language">EN</button>
+        <button class="gm-nav__icon-btn gm-nav__hamburger" id="hamburger" aria-label="Open menu" aria-expanded="false">
+            <svg id="hamburger-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                <line x1="3" y1="6" x2="21" y2="6" /><line x1="3" y1="12" x2="21" y2="12" /><line x1="3" y1="18" x2="21" y2="18" />
+            </svg>
+        </button>
+    </div>
+</header>
+
+<!-- Mobile full-screen menu -->
+<div class="gm-mobile-menu" id="mobile-menu" aria-hidden="true">
+    <nav id="mobile-menu-nav"></nav>
+</div>
+
+<div id="map"></div>
+
+<div class="loading-hint" id="loading-hint"></div>
+
+<!-- ══════════════════ INFO PANEL ══════════════════ -->
+<aside class="info-panel" id="info-panel" aria-live="polite">
+    <div class="info-panel__head">
+        <div class="info-panel__title" id="info-title"></div>
+        <button class="info-panel__toggle" id="info-toggle" aria-label="Collapse">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"></polyline></svg>
+        </button>
+    </div>
+    <div class="info-panel__body">
+        <p class="info-panel__desc" id="info-desc"></p>
+        <div class="opacity-ctl">
+            <div class="opacity-ctl__row">
+                <span class="opacity-ctl__label" id="opacity-label">Прозорість шару</span>
+                <span class="opacity-ctl__val" id="opacity-val">72%</span>
+            </div>
+            <input type="range" class="opacity-range" id="opacity-range" min="0" max="100" step="1" value="72" aria-label="Прозорість шару">
+        </div>
+        <div class="legend" id="info-legend"></div>
+        <div class="info-panel__src" id="info-src"></div>
+    </div>
+</aside>
+
+<!-- ══════════════════ LAYER SWITCH ══════════════════ -->
+<div class="ui-wrapper">
+    <div class="controls" id="controls-box"></div>
+</div>
+
+<!-- ══════════════════ FOOTER ══════════════════ -->
+<div class="gmf__overlay" id="gmf-overlay"></div>
+<footer class="gmf">
+    <div class="gmf__left" id="footer-left"></div>
+    <div class="gmf__center">
+        <a href="mailto:hi@pidsvitu.com" class="gmf__email-cta">hi@pidsvitu.com</a>
+    </div>
+    <div class="gmf__right">
+        <a href="https://www.pidsvitu.com/" class="gmf__logo-link">
+            <img src="LOGO_WHITE.svg" alt="Підсвітити ліхтар" class="gmf__logo">
+        </a>
+        <div class="gmf__partners">
+            <img src="LogoS.svg" alt="ФУНДАЦІЯ 3МІН" class="gmf__partner" style="height:20px">
+            <img src="LogoC.svg" alt="CNTRL" class="gmf__partner" style="height:15px">
+        </div>
+    </div>
+</footer>
+
+<script>
+    /* ══════════════════ i18n / ПЕРЕКЛАД ══════════════════ */
+    const STORAGE_KEY = "pidsvitu-lang";
+    let lang = "uk";
+    try {
+        const stored = window.localStorage.getItem(STORAGE_KEY);
+        if (stored === "uk" || stored === "en") lang = stored;
+    } catch (e) {}
+
+    const STR = {
+        uk: {
+            title: "Земний покрив Львова — Google Engine | Підсвітити ліхтар",
+            desc: "Інтерактивна карта земного покриву, типів забудови та нової урбанізації Львова за супутниковими даними ESA WorldCover та Dynamic World.",
+            langBtn: "EN", langAria: "Switch to English",
+            openMenu: "Відкрити меню", closeMenu: "Закрити меню",
+            loading: "Завантаження шару…",
+            opacity: "Прозорість шару",
+        },
+        en: {
+            title: "Lviv Land Cover — Google Engine | Light Up the Lantern",
+            desc: "Interactive map of Lviv's land cover, building types and new urbanisation from ESA WorldCover and Dynamic World satellite data.",
+            langBtn: "УКР", langAria: "Перемкнути на українську",
+            openMenu: "Open menu", closeMenu: "Close menu",
+            loading: "Loading layer…",
+            opacity: "Layer opacity",
+        },
+    };
+
+    const NAV_ITEMS = [
+        { label: "Історія",      labelEn: "History",     href: "https://www.pidsvitu.com/story" },
+        { label: "Майстер-план", labelEn: "Master Plan", href: "https://www.pidsvitu.com/LightMasterPlan" },
+        { label: "Інструменти",  labelEn: "Tools",       href: "https://www.pidsvitu.com/instrument" },
+        { label: "Детальніше",   labelEn: "More",        href: "https://www.pidsvitu.com/more" },
+    ];
+
+    const FOOTER_GROUPS = [
+        {
+            label: "Проєкт", labelEn: "Project",
+            links: [
+                { label: "Історія",      labelEn: "History",           href: "https://www.pidsvitu.com/story" },
+                { label: "Майстер-план", labelEn: "Light Master Plan", href: "https://www.pidsvitu.com/LightMasterPlan" },
+                { label: "Детальніше",   labelEn: "More",              href: "https://www.pidsvitu.com/more" },
+                { label: "Довідка",      labelEn: "Reference",         href: "https://www.pidsvitu.com/info" },
+            ],
+        },
+        {
+            label: "Ліхтарі", labelEn: "Lanterns",
+            links: [
+                { label: "Ринковий",      labelEn: "Market",       href: "https://pidsvitu.com/runok" },
+                { label: "Парковий",      labelEn: "Park",         href: "https://pidsvitu.com/park" },
+                { label: "Оперний",       labelEn: "Opera",        href: "https://pidsvitu.com/opera" },
+                { label: "Політехнічний", labelEn: "Polytechnic",  href: "https://pidsvitu.com/polytechnic" },
+                { label: "Потоцький",     labelEn: "Potocki",      href: "https://pidsvitu.com/potocki" },
+                { label: "Надвисокий",    labelEn: "Ultra-high",   href: "https://pidsvitu.com/ultrahight" },
+                { label: "Стометровий",   labelEn: "Hundred-metre", href: "https://pidsvitu.com/stomerovui" },
+            ],
+        },
+        {
+            label: "Інструменти", labelEn: "Tools",
+            links: [
+                { label: "Реєстр ліхтарів",                labelEn: "Lantern registry",          href: "https://list.pidsvitu.com/" },
+                { label: "Земний покрив (Google Engine)",  labelEn: "Land cover (Google Engine)", href: "https://list.pidsvitu.com/google-engine.html" },
+                { label: "Морфологічний аналіз",           labelEn: "Morphological analysis",    href: "https://deep.pidsvitu.com/" },
+                { label: "Підсвіти WIKI",                  labelEn: "Pidsvity WIKI",             href: "https://wiki.pidsvitu.com/" },
+                { label: "Перелік цінних ліхтарів Львова", labelEn: "List of valuable Lviv lanterns", href: "https://list.pidsvitu.com/" },
+                { label: "Підсвітити ліхтар AI",           labelEn: "Light Up the Lantern AI",   href: "https://llm.pidsvitu.com/" },
+            ],
+        },
+        {
+            label: "Соцмережі", labelEn: "Social",
+            links: [
+                { label: "YouTube",   labelEn: "YouTube",   href: "https://www.youtube.com/@pidsvitu",         external: true },
+                { label: "Instagram", labelEn: "Instagram", href: "https://www.instagram.com/pidsvitu_light/", external: true },
+                { label: "TikTok",    labelEn: "TikTok",    href: "#",                                         external: true },
+            ],
+        },
+    ];
+
+    const lbl = (item) => (lang === "en" ? item.labelEn : item.label);
+
+    function renderNav() {
+        const left = document.getElementById("nav-left");
+        const mobile = document.getElementById("mobile-menu-nav");
+        left.innerHTML = ""; mobile.innerHTML = "";
+        NAV_ITEMS.forEach((item) => {
+            const a = document.createElement("a");
+            a.href = item.href; a.className = "gm-nav__link"; a.textContent = lbl(item);
+            left.appendChild(a);
+            const m = document.createElement("a");
+            m.href = item.href; m.className = "gm-mobile-menu__link"; m.textContent = lbl(item);
+            m.addEventListener("click", closeMenu);
+            mobile.appendChild(m);
+        });
+    }
+
+    function renderFooter() {
+        const wrap = document.getElementById("footer-left");
+        wrap.innerHTML = "";
+        FOOTER_GROUPS.forEach((group) => {
+            const item = document.createElement("div");
+            item.className = "gmf__nav-item";
+            const trigger = document.createElement("span");
+            trigger.className = "gmf__nav-trigger"; trigger.textContent = lbl(group);
+            item.appendChild(trigger);
+            const dd = document.createElement("div");
+            dd.className = "gmf__dropdown";
+            group.links.forEach((link) => {
+                const a = document.createElement("a");
+                a.href = link.href; a.className = "gmf__dropdown-link"; a.textContent = lbl(link);
+                if (link.external) { a.target = "_blank"; a.rel = "noreferrer"; }
+                dd.appendChild(a);
+            });
+            item.appendChild(dd); wrap.appendChild(item);
+        });
+    }
+
+    function applyLang() {
+        document.documentElement.lang = lang;
+        document.title = STR[lang].title;
+        const md = document.querySelector('meta[name="description"]');
+        if (md) md.setAttribute("content", STR[lang].desc);
+        const langBtn = document.getElementById("lang-btn");
+        langBtn.textContent = STR[lang].langBtn;
+        langBtn.setAttribute("aria-label", STR[lang].langAria);
+        langBtn.setAttribute("title", STR[lang].langAria);
+        renderNav(); renderFooter(); renderControls(); renderInfo();
+    }
+
+    document.getElementById("lang-btn").addEventListener("click", () => {
+        lang = lang === "uk" ? "en" : "uk";
+        try { window.localStorage.setItem(STORAGE_KEY, lang); } catch (e) {}
+        applyLang();
+    });
+
+    /* ── Mobile hamburger menu ── */
+    let menuOpen = false;
+    const hamburger = document.getElementById("hamburger");
+    const mobileMenu = document.getElementById("mobile-menu");
+    function setHamburgerIcon() {
+        document.getElementById("hamburger-icon").outerHTML = menuOpen
+            ? '<svg id="hamburger-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>'
+            : '<svg id="hamburger-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><line x1="3" y1="6" x2="21" y2="6" /><line x1="3" y1="12" x2="21" y2="12" /><line x1="3" y1="18" x2="21" y2="18" /></svg>';
+    }
+    function openMenu() {
+        menuOpen = true; mobileMenu.classList.add("gm-mobile-menu--open");
+        mobileMenu.setAttribute("aria-hidden", "false");
+        hamburger.setAttribute("aria-expanded", "true");
+        hamburger.setAttribute("aria-label", STR[lang].closeMenu); setHamburgerIcon();
+    }
+    function closeMenu() {
+        menuOpen = false; mobileMenu.classList.remove("gm-mobile-menu--open");
+        mobileMenu.setAttribute("aria-hidden", "true");
+        hamburger.setAttribute("aria-expanded", "false");
+        hamburger.setAttribute("aria-label", STR[lang].openMenu); setHamburgerIcon();
+    }
+    hamburger.addEventListener("click", () => (menuOpen ? closeMenu() : openMenu()));
+    window.addEventListener("resize", () => { if (window.innerWidth >= 768 && menuOpen) closeMenu(); });
+
+    const nav = document.getElementById("gm-nav");
+    window.addEventListener("scroll", () => nav.classList.toggle("gm-nav--scrolled", window.scrollY > 10), { passive: true });
+
+    /* ══════════════════ ШАРИ / LAYERS CONFIG ══════════════════ */
+    // Required attribution lines (shown on relevant layers):
+    const CREDIT_WORLDCOVER = "CC-BY-4.0 · ESA WorldCover 10m v200";
+    const CREDIT_DYNAMICWORLD = {
+        uk: "Набір даних створено для проєкту Dynamic World компанією Google у партнерстві з National Geographic Society та World Resources Institute.",
+        en: "This dataset is produced for the Dynamic World Project by Google in partnership with National Geographic Society and the World Resources Institute.",
+    };
+
+    // ESA WorldCover official class palette
+    const WC = {
+        10: '#1A8718', 30: '#F0E64C', 40: '#F096FF', 50: '#FA0000',
+        60: '#B4B4B4', 80: '#0064C8', 90: '#0096A0',
+    };
+
+    const LAYERS = [
+        {
+            id: 'land', name: 'Земний покрив', nameEn: 'Land cover',
+            mapLayers: ['wc-fill'],
+            desc: 'Класифікація земного покриву Львівщини за супутниковими даними ESA WorldCover (роздільність 10 м). Кожен піксель віднесено до одного з типів покриву — від лісу й трав до забудови та води.',
+            descEn: 'Land-cover classification of the Lviv area from ESA WorldCover satellite data (10 m resolution). Each pixel is assigned to a cover type — from forest and grass to built-up and water.',
+            legend: [
+                { c: WC[10], l: 'Деревний покрив', le: 'Tree cover' },
+                { c: WC[30], l: 'Трав’яний покрив', le: 'Grassland' },
+                { c: WC[40], l: 'Орні землі', le: 'Cropland' },
+                { c: WC[50], l: 'Забудова', le: 'Built-up' },
+                { c: WC[60], l: 'Оголений / розріджений ґрунт', le: 'Bare / sparse vegetation' },
+                { c: WC[80], l: 'Постійні водойми', le: 'Permanent water bodies' },
+                { c: WC[90], l: 'Трав’янисті болота', le: 'Herbaceous wetland' },
+            ],
+            srcTag: 'ESA WorldCover',
+            src: CREDIT_WORLDCOVER, srcEn: CREDIT_WORLDCOVER,
+            note: CREDIT_DYNAMICWORLD.uk, noteEn: CREDIT_DYNAMICWORLD.en,
+        },
+        {
+            id: 'build', name: 'Типи забудови', nameEn: 'Building types',
+            mapLayers: ['bld-extrusion'],
+            desc: 'Забудова Львова за категоріями висоти — від найнижчого приватного сектора й гаражів до радянських панельних масивів і сучасних висоток. Висота стовпчиків відповідає реальній висоті будівель.',
+            descEn: 'Lviv’s built environment by height category — from the lowest private housing and garages to Soviet panel districts and modern high-rises. Column height matches the real building height.',
+            legend: [
+                { c: '#FFFFB2', l: '0–3 м · гаражі, господарські', le: '0–3 m · garages, outbuildings' },
+                { c: '#FED976', l: '3–6 м · приватний сектор, садиби', le: '3–6 m · private housing' },
+                { c: '#FEB24C', l: '6–10 м · стара передмісна забудова', le: '6–10 m · old suburban' },
+                { c: '#FD8D3C', l: '10–15 м · центр (камʼяниці), хрущовки', le: '10–15 m · historic centre, low Soviet' },
+                { c: '#F03B20', l: '15–21 м · радянська середньоповерхова', le: '15–21 m · mid-rise Soviet' },
+                { c: '#BD0026', l: '21–30 м · панельні масиви, висотки', le: '21–30 m · panel districts, high-rises' },
+            ],
+            srcTag: 'Building heights',
+            src: 'Похідний шар висот забудови на основі супутникових даних. Опрацьовано через Google Earth Engine.',
+            srcEn: 'Derived building-height layer from satellite data. Processed via Google Earth Engine.',
+            note: null, noteEn: null,
+        },
+        {
+            id: 'urban', name: 'Нова забудова 2015–2024', nameEn: 'New urban 2015–2024',
+            mapLayers: ['urban-fill'],
+            desc: 'Ділянки, що змінилися із не-забудованих на забудовані у 2015–2024 роках. Яскравіші зони — щільніша нова забудова. Дані Dynamic World (Google).',
+            descEn: 'Areas that changed from non-built to built between 2015 and 2024. Brighter zones mean denser new development. Dynamic World data (Google).',
+            legend: [
+                { c: '#00E5FF', l: 'Нова забудова 2015–2024', le: 'New urban 2015–2024' },
+            ],
+            srcTag: 'Dynamic World',
+            src: CREDIT_DYNAMICWORLD.uk, srcEn: CREDIT_DYNAMICWORLD.en,
+            note: null, noteEn: null,
+        },
+    ];
+
+    const layerName = (l) => (lang === 'en' ? l.nameEn : l.name);
+    let activeLayer = 'land';
+    // Default + remembered opacity (0–1) per layer
+    const layerOpacity = { land: 0.72, build: 0.92, urban: 1 };
+
+    /* ── Layer switch buttons ── */
+    function renderControls() {
+        const box = document.getElementById('controls-box');
+        box.innerHTML = '';
+        LAYERS.forEach((layer) => {
+            const btn = document.createElement('button');
+            btn.className = 'layer-btn' + (layer.id === activeLayer ? ' active' : '');
+            btn.dataset.id = layer.id;
+            const dot = document.createElement('span');
+            dot.className = 'dot';
+            dot.style.color = layer.legend[layer.legend.length - 1].c;
+            dot.style.background = layer.legend[layer.legend.length - 1].c;
+            btn.appendChild(dot);
+            const span = document.createElement('span');
+            span.textContent = layerName(layer);
+            btn.appendChild(span);
+            btn.onclick = () => activate(layer.id);
+            box.appendChild(btn);
+        });
+    }
+
+    /* ── Info panel ── */
+    function renderInfo() {
+        const layer = LAYERS.find((l) => l.id === activeLayer);
+        if (!layer) return;
+        document.getElementById('info-title').textContent = layerName(layer);
+        document.getElementById('info-desc').textContent = lang === 'en' ? layer.descEn : layer.desc;
+
+        const leg = document.getElementById('info-legend');
+        leg.innerHTML = '';
+        layer.legend.forEach((it) => {
+            const row = document.createElement('div');
+            row.className = 'legend__item';
+            const sw = document.createElement('span');
+            sw.className = 'legend__swatch'; sw.style.background = it.c;
+            const lab = document.createElement('span');
+            lab.className = 'legend__label';
+            lab.textContent = lang === 'en' ? it.le : it.l;
+            row.appendChild(sw); row.appendChild(lab); leg.appendChild(row);
+        });
+
+        const src = document.getElementById('info-src');
+        const note = lang === 'en' ? layer.noteEn : layer.note;
+        src.innerHTML =
+            '<span class="tag">' + layer.srcTag + '</span><br>' +
+            (lang === 'en' ? layer.srcEn : layer.src) +
+            (note ? '<br><br>' + note : '');
+
+        syncOpacityUI();
+    }
+
+    document.getElementById('info-toggle').addEventListener('click', () => {
+        document.getElementById('info-panel').classList.toggle('collapsed');
+    });
+
+    /* ── Opacity slider ── */
+    const opRange = document.getElementById('opacity-range');
+    const opVal = document.getElementById('opacity-val');
+    function syncOpacityUI() {
+        const v = layerOpacity[activeLayer];
+        opRange.value = Math.round(v * 100);
+        opVal.textContent = Math.round(v * 100) + '%';
+        document.getElementById('opacity-label').textContent = STR[lang].opacity;
+        opRange.setAttribute('aria-label', STR[lang].opacity);
+    }
+    function applyOpacity(v) {
+        if (!map || !map.isStyleLoaded()) return;
+        if (activeLayer === 'land' && map.getLayer('wc-fill')) {
+            map.setPaintProperty('wc-fill', 'fill-opacity', v);
+        } else if (activeLayer === 'build' && map.getLayer('bld-extrusion')) {
+            map.setPaintProperty('bld-extrusion', 'fill-extrusion-opacity', v);
+        } else if (activeLayer === 'urban' && map.getLayer('urban-fill')) {
+            // preserve density gradient: scale the data-driven expression by the slider
+            map.setPaintProperty('urban-fill', 'fill-opacity', ['*', v, URBAN_OPACITY]);
+            map.setPaintProperty('urban-outline', 'line-opacity', v * 0.5);
+        }
+    }
+    opRange.addEventListener('input', () => {
+        const v = Number(opRange.value) / 100;
+        layerOpacity[activeLayer] = v;
+        opVal.textContent = opRange.value + '%';
+        applyOpacity(v);
+    });
+
+    /* ══════════════════ КАРТА / MAP (MapLibre GL + OpenStreetMap) ══════════════════ */
+    const isMobile = window.innerWidth < 768;
+    const BASE = location.href.replace(/[^/]*(?:\?.*)?$/, '');
+    const lvivBounds = [[23.86, 49.73], [24.17, 49.93]];
+
+    // Dark OpenStreetMap raster base (OSM data, CARTO rendering) — dark theme, street/place names, free, no token.
+    // Two layers: "nolabels" geometry at the bottom, "only_labels" placed above the data so names stay readable.
+    const OSM_ATTR = '© <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> contributors';
+    const osmTiles = (style) => [
+        'https://a.basemaps.cartocdn.com/' + style + '/{z}/{x}/{y}.png',
+        'https://b.basemaps.cartocdn.com/' + style + '/{z}/{x}/{y}.png',
+        'https://c.basemaps.cartocdn.com/' + style + '/{z}/{x}/{y}.png',
+        'https://d.basemaps.cartocdn.com/' + style + '/{z}/{x}/{y}.png',
+    ];
+
+    const map = new maplibregl.Map({
+        container: 'map',
+        style: {
+            version: 8,
+            sources: {
+                'osm-base':   { type: 'raster', tiles: osmTiles('dark_nolabels'),   tileSize: 256, maxzoom: 20, attribution: OSM_ATTR },
+                'osm-labels': { type: 'raster', tiles: osmTiles('dark_only_labels'), tileSize: 256, maxzoom: 20 },
+            },
+            layers: [
+                { id: 'bg', type: 'background', paint: { 'background-color': '#0a0a0a' } },
+                { id: 'osm-base-layer', type: 'raster', source: 'osm-base' },
+            ],
+        },
+        center: [24.0311, 49.8400],
+        zoom: isMobile ? 11 : 12.2,
+        pitch: 0, bearing: 0, antialias: true,
+        maxBounds: lvivBounds, maxZoom: 17, minZoom: 10,
+    });
+    map.addControl(new maplibregl.NavigationControl({ showCompass: true, visualizePitch: true }), 'top-left');
+
+    const loadingHint = document.getElementById('loading-hint');
+    function showLoading(on) {
+        loadingHint.textContent = STR[lang].loading;
+        loadingHint.classList.toggle('visible', on);
+    }
+
+    // density-based opacity expression for the new-urban layer (scaled by the slider)
+    const URBAN_OPACITY = ['interpolate', ['linear'], ['to-number', ['get', 'count']],
+        1, 0.30, 50, 0.55, 500, 0.78, 2000, 0.9];
+
+    map.on('load', () => {
+        /* ── 1. WorldCover (vector tiles) ── */
+        map.addSource('worldcover', {
+            type: 'vector',
+            tiles: [BASE + 'tiles/worldcover/{z}/{x}/{y}.pbf'],
+            minzoom: 10, maxzoom: 14,
+        });
+        map.addLayer({
+            id: 'wc-fill', type: 'fill', source: 'worldcover', 'source-layer': 'worldcover',
+            layout: { visibility: 'visible' },
+            paint: {
+                'fill-color': ['match', ['get', 'class_id'],
+                    10, WC[10], 30, WC[30], 40, WC[40], 50, WC[50], 60, WC[60], 80, WC[80], 90, WC[90],
+                    '#555555'],
+                'fill-opacity': 0.72,
+                'fill-antialias': false,
+            },
+        });
+
+        /* ── 2. Building types (3D extrusion) — above labels for the 3D view ── */
+        map.addSource('buildings', { type: 'geojson', data: './google engine/lviv_building_types.geojson' });
+        map.addLayer({
+            id: 'bld-extrusion', type: 'fill-extrusion', source: 'buildings',
+            filter: ['>', ['get', 'class'], 0],
+            layout: { visibility: 'none' },
+            paint: {
+                'fill-extrusion-color': ['match', ['get', 'class'],
+                    1, '#FFFFB2', 2, '#FED976', 3, '#FEB24C', 4, '#FD8D3C', 5, '#F03B20', 6, '#BD0026',
+                    '#888888'],
+                'fill-extrusion-height': ['*', ['to-number', ['get', 'built_height']], 2.0],
+                'fill-extrusion-base': 0,
+                'fill-extrusion-opacity': 0.92,
+            },
+        });
+
+        /* ── 3. New urban 2015–2024 ── */
+        map.addSource('newurban', { type: 'geojson', data: './google engine/lviv_new_urban_2015_2024.geojson' });
+        map.addLayer({
+            id: 'urban-fill', type: 'fill', source: 'newurban',
+            layout: { visibility: 'none' },
+            paint: { 'fill-color': '#00E5FF', 'fill-opacity': URBAN_OPACITY },
+        });
+        map.addLayer({
+            id: 'urban-outline', type: 'line', source: 'newurban',
+            layout: { visibility: 'none' },
+            paint: { 'line-color': '#7CF5FF', 'line-width': 0.4, 'line-opacity': 0.5 },
+        });
+
+        // Street/place names on top, so they stay readable over the data layers.
+        map.addLayer({ id: 'osm-labels-layer', type: 'raster', source: 'osm-labels' });
+
+        // loading hint based on tile/source loading
+        map.on('sourcedataloading', () => { if (activeLayer === 'land') showLoading(true); });
+        map.on('idle', () => showLoading(false));
+
+        applyLayerVisibility();
+    });
+
+    const ALL_MAP_LAYERS = ['wc-fill', 'bld-extrusion', 'urban-fill', 'urban-outline'];
+    const LAYER_VISIBLE = {
+        land: ['wc-fill'],
+        build: ['bld-extrusion'],
+        urban: ['urban-fill', 'urban-outline'],
+    };
+
+    function applyLayerVisibility() {
+        const visible = LAYER_VISIBLE[activeLayer] || [];
+        ALL_MAP_LAYERS.forEach((id) => {
+            if (!map.getLayer(id)) return;
+            map.setLayoutProperty(id, 'visibility', visible.includes(id) ? 'visible' : 'none');
+        });
+        applyOpacity(layerOpacity[activeLayer]);
+        // 3D camera only for buildings
+        const targetPitch = activeLayer === 'build' ? (isMobile ? 45 : 55) : 0;
+        map.easeTo({ pitch: targetPitch, duration: 800 });
+    }
+
+    function activate(id) {
+        if (id === activeLayer) return;
+        activeLayer = id;
+        document.querySelectorAll('.layer-btn').forEach((b) =>
+            b.classList.toggle('active', b.dataset.id === id));
+        renderInfo();
+        if (map.isStyleLoaded()) applyLayerVisibility();
+    }
+
+    /* ── init ── */
+    applyLang();
+</script>
+
+</body>
+</html>

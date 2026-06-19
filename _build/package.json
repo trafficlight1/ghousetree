@@ -1,0 +1,1 @@
+{"name":"tilebuild","version":"1.0.0","private":true,"type":"commonjs","dependencies":{"geojson-vt":"^4.0.3","vt-pbf":"^3.1.3"}}
