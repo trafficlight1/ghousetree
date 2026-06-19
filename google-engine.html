@@ -287,15 +287,24 @@
         .loading-hint.visible { opacity: 1; }
 
         @media (max-width: 767px) {
-            .ui-wrapper { bottom: 132px; }
-            .controls { width: 92%; display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; padding: 12px; border-radius: 22px; }
+            /* Footer is hidden on mobile — not enough vertical room. */
+            .gmf, .gmf__overlay { display: none; }
+            /* The floating layer-switch panel doesn't fit, so the buttons move into the info panel. */
+            .ui-wrapper { display: none; }
+            #controls-slot { margin: 0 0 14px; }
+            #controls-slot .controls {
+                position: static; background: none; backdrop-filter: none; -webkit-backdrop-filter: none;
+                padding: 0; border: none; box-shadow: none; border-radius: 0;
+                width: 100%; max-width: 100%;
+                display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px;
+            }
             .layer-btn { width: 100%; font-size: 11px; padding: 9px 4px; border-radius: 14px; min-width: auto; justify-content: center; }
             .layer-btn .dot { display: none; }
             .info-panel {
-                top: auto; bottom: 64px; left: 0; right: 0; width: 100%; max-width: 100%;
+                top: auto; bottom: 0; left: 0; right: 0; width: 100%; max-width: 100%;
                 border-radius: 22px 22px 0 0; border-bottom: none;
             }
-            .info-panel__body { max-height: 34vh; }
+            .info-panel__body { max-height: 42vh; }
             .info-panel.collapsed { transform: translateY(0); }
         }
     </style>
@@ -340,6 +349,7 @@
         </button>
     </div>
     <div class="info-panel__body">
+        <div id="controls-slot"></div>
         <p class="info-panel__desc" id="info-desc"></p>
         <div class="opacity-ctl">
             <div class="opacity-ctl__row">
@@ -894,6 +904,19 @@
         renderInfo();
         applyLayerVisibilityWhenReady();
     }
+
+    /* ── On mobile the footer is hidden and the floating layer panel doesn't fit,
+          so move the layer buttons into the info panel; restore them on desktop. ── */
+    const controlsBox = document.getElementById('controls-box');
+    const controlsSlot = document.getElementById('controls-slot');
+    const uiWrapper = document.querySelector('.ui-wrapper');
+    const mqMobile = window.matchMedia('(max-width: 767px)');
+    function placeControls() {
+        const target = mqMobile.matches ? controlsSlot : uiWrapper;
+        if (controlsBox.parentElement !== target) target.appendChild(controlsBox);
+    }
+    placeControls();
+    mqMobile.addEventListener('change', placeControls);
 
     /* ── init ── */
     applyLang();
