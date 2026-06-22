@@ -286,6 +286,22 @@
         }
         .loading-hint.visible { opacity: 1; }
 
+        /* ══════════════════ NTL VARIANT SEGMENTED CONTROL + CHART ══════════════════ */
+        .seg { display: flex; gap: 4px; margin: 0 0 14px; flex-wrap: wrap; }
+        .seg__btn {
+            flex: 1 1 auto; min-width: 60px; background: rgba(255,255,255,0.06);
+            border: 1px solid rgba(255,255,255,0.16); color: rgba(255,255,255,0.78);
+            font-family: 'Manrope', sans-serif; font-size: 0.68rem; font-weight: 600;
+            letter-spacing: 0.02em; padding: 7px 6px; border-radius: 12px; cursor: pointer;
+            transition: all 0.2s ease; white-space: nowrap;
+        }
+        .seg__btn:hover { color: #fff; border-color: rgba(255,255,255,0.4); }
+        .seg__btn.active { background: #fff; color: #000; border-color: #fff; }
+        .ntl-chart { margin: 0 0 16px; }
+        .ntl-chart__title { font-size: 0.66rem; letter-spacing: 0.05em; text-transform: uppercase; color: rgba(255,255,255,0.55); margin: 0 0 8px; }
+        .ntl-chart svg { display: block; width: 100%; height: auto; overflow: visible; }
+        .ntl-chart__cap { font-size: 0.64rem; color: rgba(255,255,255,0.45); margin: 6px 0 0; line-height: 1.4; }
+
         @media (max-width: 767px) {
             /* Footer is hidden on mobile — not enough vertical room. */
             .gmf, .gmf__overlay { display: none; }
@@ -351,6 +367,7 @@
     <div class="info-panel__body">
         <div id="controls-slot"></div>
         <p class="info-panel__desc" id="info-desc"></p>
+        <div id="info-extra"></div>
         <div class="opacity-ctl">
             <div class="opacity-ctl__row">
                 <span class="opacity-ctl__label" id="opacity-label">Прозорість шару</span>
@@ -569,7 +586,7 @@
 
     // ESA WorldCover official class palette
     const WC = {
-        10: '#1A8718', 30: '#F0E64C', 40: '#F096FF', 50: '#7a7474',
+        10: '#1A8718', 30: '#F0E64C', 40: '#F096FF', 50: 'transparent',
         60: '#B4B4B4', 80: '#0064C8', 90: '#0096A0',
     };
 
@@ -622,12 +639,93 @@
             src: CREDIT_DYNAMICWORLD.uk, srcEn: CREDIT_DYNAMICWORLD.en,
             note: null, noteEn: null,
         },
+        {
+            id: 'ntl', name: 'Нічні вогні', nameEn: 'Nighttime lights',
+            mapLayers: ['ntl-points'],
+            desc: 'Яскравість нічного освітлення Львова за даними NASA Black Marble (VIIRS, ~500 м). Перемикайте композити: річні точки 2021, зимовий і літній сезони та січень 2013-го для порівняння. Графік показує середню радіацію помісячно.',
+            descEn: 'Nighttime light brightness of Lviv from NASA Black Marble (VIIRS, ~500 m). Switch between composites: 2021 annual points, winter and summer seasons, and January 2013 for comparison. The chart shows mean radiance month by month.',
+            legend: [
+                { c: '#fcfdbf', l: 'Яскраво (центр, магістралі)', le: 'Bright (centre, highways)' },
+                { c: '#fe9f6d', l: 'Високе освітлення', le: 'High lighting' },
+                { c: '#de4968', l: 'Помірне', le: 'Moderate' },
+                { c: '#8c2981', l: 'Низьке', le: 'Low' },
+                { c: '#3b0f70', l: 'Околиці, темні зони', le: 'Outskirts, dark zones' },
+            ],
+            srcTag: 'NASA Black Marble · VIIRS VNP46',
+            src: 'NASA Black Marble (VNP46A) — нічні вогні VIIRS. Дані у відкритому доступі без обмежень. Опрацьовано через Google Earth Engine.',
+            srcEn: 'NASA Black Marble (VNP46A) — VIIRS nighttime lights. Open data, no restrictions. Processed via Google Earth Engine.',
+            note: null, noteEn: null,
+        },
+        {
+            id: 'builtsurface', name: 'Площа забудови', nameEn: 'Built surface',
+            mapLayers: ['builtsurface-raster'],
+            desc: 'Щільність забудованої поверхні Львова станом на 2020 рік за даними GHSL (JRC/Copernicus, 100 м). Яскравіші ділянки — більша площа забудови в межах клітинки (до ~10 000 м²).',
+            descEn: 'Built-up surface density of Lviv as of 2020 from GHSL (JRC/Copernicus, 100 m). Brighter areas mean more built surface within a cell (up to ~10,000 m²).',
+            legend: [
+                { c: '#fcffa4', l: 'Дуже щільна забудова', le: 'Very dense built-up' },
+                { c: '#fb9a06', l: 'Щільна', le: 'Dense' },
+                { c: '#bc3754', l: 'Помірна', le: 'Moderate' },
+                { c: '#57106e', l: 'Розріджена', le: 'Sparse' },
+            ],
+            srcTag: 'GHSL Built Surface',
+            src: 'CC-BY-4.0 · GHSL Built-up Surface 2020 (EC JRC / Copernicus).',
+            srcEn: 'CC-BY-4.0 · GHSL Built-up Surface 2020 (EC JRC / Copernicus).',
+            note: null, noteEn: null,
+        },
+        {
+            id: 'smod', name: 'Ступінь урбанізації', nameEn: 'Degree of urbanisation',
+            mapLayers: ['smod-raster'],
+            desc: 'Модель ступеня урбанізації GHSL (SMOD, 2020): від міського ядра до сільських і малозаселених територій. Класифікація за щільністю населення й забудови.',
+            descEn: 'GHSL Degree of Urbanisation model (SMOD, 2020): from the urban centre to rural and sparsely populated areas. Classified by population and built-up density.',
+            legend: [
+                { c: '#e60000', l: 'Міське ядро', le: 'Urban centre' },
+                { c: '#ff6e00', l: 'Щільний міський кластер', le: 'Dense urban cluster' },
+                { c: '#ffc85a', l: 'Передмістя / приміська зона', le: 'Suburban / peri-urban' },
+                { c: '#96be6e', l: 'Сільський кластер', le: 'Rural cluster' },
+                { c: '#e1ebc8', l: 'Малозаселена сільська', le: 'Low-density rural' },
+                { c: '#82b4dc', l: 'Вода', le: 'Water' },
+            ],
+            srcTag: 'GHSL SMOD',
+            src: 'CC-BY-4.0 · GHSL Settlement Model (SMOD) 2020 (EC JRC / Copernicus).',
+            srcEn: 'CC-BY-4.0 · GHSL Settlement Model (SMOD) 2020 (EC JRC / Copernicus).',
+            note: null, noteEn: null,
+        },
+        {
+            id: 'ndvi', name: 'Рослинність NDVI', nameEn: 'Vegetation NDVI',
+            mapLayers: ['ndvi-raster'],
+            desc: 'Індекс рослинності NDVI Львова за оптичними даними Sentinel-2 (10 м). Зелене — густа рослинність і ліси, жовте — рідка трава й оголений ґрунт, синє — вода. Чітко видно межу міста та зелені зони.',
+            descEn: 'NDVI vegetation index of Lviv from Sentinel-2 optical data (10 m). Green = dense vegetation and forest, yellow = sparse grass and bare soil, blue = water. The city boundary and green zones stand out clearly.',
+            legend: [
+                { c: '#0b6b2e', l: 'Густа рослинність, ліс', le: 'Dense vegetation, forest' },
+                { c: '#41ab5d', l: 'Помірна рослинність', le: 'Moderate vegetation' },
+                { c: '#e6e6a0', l: 'Рідка трава', le: 'Sparse grass' },
+                { c: '#d9c8a0', l: 'Оголений ґрунт / забудова', le: 'Bare soil / built-up' },
+                { c: '#2c7fb8', l: 'Вода', le: 'Water' },
+            ],
+            srcTag: 'Sentinel-2 · Copernicus',
+            src: 'Copernicus Sentinel-2 (ESA/EU), відкрита ліцензія Copernicus. NDVI опрацьовано через Google Earth Engine.',
+            srcEn: 'Copernicus Sentinel-2 (ESA/EU), Copernicus open licence. NDVI processed via Google Earth Engine.',
+            note: null, noteEn: null,
+        },
     ];
+
+    /* NTL composite variants (Black Marble) — switched inside the info panel */
+    const NTL_VARIANTS = [
+        { id: 'points', label: 'Точки 2021', labelEn: 'Points 2021', mapLayer: 'ntl-points' },
+        { id: 'winter', label: 'Зима 2021', labelEn: 'Winter 2021', mapLayer: 'ntl-winter' },
+        { id: 'summer', label: 'Літо 2021', labelEn: 'Summer 2021', mapLayer: 'ntl-summer' },
+        { id: '2013',   label: 'Січень 2013', labelEn: 'Jan 2013',  mapLayer: 'ntl-2013' },
+    ];
+    let ntlVariant = 'points';
+    // Mean monthly NTL radiance, 2021 (from blackmarble_lviv_2021_monthly.csv; June missing)
+    const NTL_MONTHLY = [1.955, 3.063, 1.761, 1.592, 1.619, null, 1.588, 1.414, 1.512, 1.566, 1.574, 2.436];
+    const MONTHS_UK = ['С','Л','Б','К','Т','Ч','Л','С','В','Ж','Л','Г'];
+    const MONTHS_EN = ['J','F','M','A','M','J','J','A','S','O','N','D'];
 
     const layerName = (l) => (lang === 'en' ? l.nameEn : l.name);
     let activeLayer = 'land';
     // Default + remembered opacity (0–1) per layer
-    const layerOpacity = { land: 0.72, build: 0.92, urban: 1 };
+    const layerOpacity = { land: 0.72, build: 0.92, urban: 1, ntl: 1, builtsurface: 0.85, smod: 0.78, ndvi: 0.88 };
 
     /* ── Layer switch buttons ── */
     function renderControls() {
@@ -677,8 +775,87 @@
             (lang === 'en' ? layer.srcEn : layer.src) +
             (note ? '<br><br>' + note : '');
 
+        renderInfoExtra(layer);
         syncOpacityUI();
         syncBasemapUI();
+    }
+
+    /* ── NTL variant segmented control + monthly radiance chart ── */
+    function renderInfoExtra(layer) {
+        const box = document.getElementById('info-extra');
+        box.innerHTML = '';
+        if (layer.id !== 'ntl') return;
+
+        // segmented variant switch
+        const seg = document.createElement('div');
+        seg.className = 'seg';
+        NTL_VARIANTS.forEach((v) => {
+            const b = document.createElement('button');
+            b.className = 'seg__btn' + (v.id === ntlVariant ? ' active' : '');
+            b.textContent = lang === 'en' ? v.labelEn : v.label;
+            b.onclick = () => setNtlVariant(v.id);
+            seg.appendChild(b);
+        });
+        box.appendChild(seg);
+
+        // monthly chart
+        const chart = document.createElement('div');
+        chart.className = 'ntl-chart';
+        const t = document.createElement('p');
+        t.className = 'ntl-chart__title';
+        t.textContent = lang === 'en' ? 'Mean radiance by month · 2021' : 'Середня радіація по місяцях · 2021';
+        chart.appendChild(t);
+        chart.insertAdjacentHTML('beforeend', buildMonthlyChart());
+        const cap = document.createElement('p');
+        cap.className = 'ntl-chart__cap';
+        cap.textContent = lang === 'en'
+            ? 'Lighting peaks in winter (Feb) and drops in summer; June has no clear-sky data.'
+            : 'Освітлення зростає взимку (лютий) і падає влітку; за червень немає безхмарних даних.';
+        chart.appendChild(cap);
+        box.appendChild(chart);
+    }
+
+    function buildMonthlyChart() {
+        const W = 280, H = 96, pad = 4, baseY = H - 16;
+        const vals = NTL_MONTHLY;
+        const max = Math.max(...vals.filter((v) => v != null));
+        const n = vals.length;
+        const bw = (W - pad * 2) / n;
+        const months = lang === 'en' ? MONTHS_EN : MONTHS_UK;
+        let bars = '';
+        vals.forEach((v, i) => {
+            const x = pad + i * bw;
+            if (v == null) {
+                bars += `<rect x="${(x + 2).toFixed(1)}" y="${baseY - 6}" width="${(bw - 4).toFixed(1)}" height="6" rx="2" fill="rgba(255,255,255,0.12)"/>`;
+            } else {
+                const h = ((v / max) * (baseY - 6));
+                const col = i === 1 ? '#fcfdbf' : (i === 11 ? '#fe9f6d' : '#de4968');
+                bars += `<rect x="${(x + 2).toFixed(1)}" y="${(baseY - h).toFixed(1)}" width="${(bw - 4).toFixed(1)}" height="${h.toFixed(1)}" rx="2" fill="${col}"/>`;
+            }
+            bars += `<text x="${(x + bw / 2).toFixed(1)}" y="${H - 3}" text-anchor="middle" font-size="8" fill="rgba(255,255,255,0.5)" font-family="Manrope,sans-serif">${months[i]}</text>`;
+        });
+        return `<svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="xMidYMid meet" role="img">` +
+               `<line x1="${pad}" y1="${baseY}" x2="${W - pad}" y2="${baseY}" stroke="rgba(255,255,255,0.15)" stroke-width="1"/>` +
+               bars + `</svg>`;
+    }
+
+    function setNtlVariant(id) {
+        if (id === ntlVariant) return;
+        ntlVariant = id;
+        document.querySelectorAll('#info-extra .seg__btn').forEach((b, i) =>
+            b.classList.toggle('active', NTL_VARIANTS[i].id === id));
+        applyNtlVariantVisibility();
+        applyOpacity(layerOpacity.ntl);
+    }
+
+    const NTL_MAP_LAYERS = { points: 'ntl-points', winter: 'ntl-winter', summer: 'ntl-summer', '2013': 'ntl-2013' };
+    function applyNtlVariantVisibility() {
+        if (!map) return;
+        Object.entries(NTL_MAP_LAYERS).forEach(([vid, lid]) => {
+            if (!map.getLayer(lid)) return;
+            const on = (activeLayer === 'ntl' && vid === ntlVariant);
+            map.setLayoutProperty(lid, 'visibility', on ? 'visible' : 'none');
+        });
     }
 
     document.getElementById('info-toggle').addEventListener('click', () => {
@@ -705,6 +882,19 @@
             // preserve density gradient: scale the data-driven expression by the slider
             map.setPaintProperty('urban-fill', 'fill-opacity', ['*', v, URBAN_OPACITY]);
             map.setPaintProperty('urban-outline', 'line-opacity', v * 0.5);
+        } else if (activeLayer === 'ntl') {
+            if (ntlVariant === 'points' && map.getLayer('ntl-points')) {
+                map.setPaintProperty('ntl-points', 'circle-opacity', v);
+            } else {
+                const lid = NTL_MAP_LAYERS[ntlVariant];
+                if (lid && map.getLayer(lid)) map.setPaintProperty(lid, 'raster-opacity', v);
+            }
+        } else if (activeLayer === 'builtsurface' && map.getLayer('builtsurface-raster')) {
+            map.setPaintProperty('builtsurface-raster', 'raster-opacity', v);
+        } else if (activeLayer === 'smod' && map.getLayer('smod-raster')) {
+            map.setPaintProperty('smod-raster', 'raster-opacity', v);
+        } else if (activeLayer === 'ndvi' && map.getLayer('ndvi-raster')) {
+            map.setPaintProperty('ndvi-raster', 'raster-opacity', v);
         }
     }
     opRange.addEventListener('input', () => {
@@ -756,7 +946,15 @@
     /* ══════════════════ КАРТА / MAP (MapLibre GL + OpenStreetMap) ══════════════════ */
     const isMobile = window.innerWidth < 768;
     const BASE = location.href.replace(/[^/]*(?:\?.*)?$/, '');
-    const lvivBounds = [[23.86, 49.73], [24.17, 49.93]];
+    const lvivBounds = [[23.85, 49.73], [24.19, 49.94]];
+
+    // WGS84 corner coordinates (TL, TR, BR, BL) for the raster PNG overlays in /new/png.
+    const IMG_COORDS = {
+        ntl:           [[23.917644, 49.923872], [24.124257, 49.923872], [24.124257, 49.766667], [23.917644, 49.766667]],
+        built_surface: [[23.872460, 49.920079], [24.167948, 49.920079], [24.167948, 49.769279], [23.872460, 49.769279]],
+        smod:          [[23.867640, 49.928669], [24.182448, 49.928669], [24.182448, 49.766187], [23.867640, 49.766187]],
+        ndvi:          [[23.919980, 49.920009], [24.120035, 49.920009], [24.120035, 49.769991], [23.919980, 49.769991]],
+    };
 
     // Dark OpenStreetMap raster base (OSM data, CARTO rendering) — dark theme, street/place names, free, no token.
     // Two layers: "nolabels" geometry at the bottom, "only_labels" placed above the data so names stay readable.
@@ -849,6 +1047,57 @@
             paint: { 'line-color': '#7CF5FF', 'line-width': 0.4, 'line-opacity': 0.5 },
         });
 
+        /* ── 4. NDVI (Sentinel-2) raster overlay ── */
+        map.addSource('ndvi', { type: 'image', url: BASE + 'new/png/ndvi.png', coordinates: IMG_COORDS.ndvi });
+        map.addLayer({
+            id: 'ndvi-raster', type: 'raster', source: 'ndvi',
+            layout: { visibility: 'none' },
+            paint: { 'raster-opacity': 0.88, 'raster-resampling': 'linear', 'raster-fade-duration': 0 },
+        });
+
+        /* ── 5. GHSL built surface raster overlay ── */
+        map.addSource('builtsurface', { type: 'image', url: BASE + 'new/png/built_surface.png', coordinates: IMG_COORDS.built_surface });
+        map.addLayer({
+            id: 'builtsurface-raster', type: 'raster', source: 'builtsurface',
+            layout: { visibility: 'none' },
+            paint: { 'raster-opacity': 0.85, 'raster-resampling': 'nearest', 'raster-fade-duration': 0 },
+        });
+
+        /* ── 6. GHSL degree of urbanisation (SMOD) raster overlay ── */
+        map.addSource('smod', { type: 'image', url: BASE + 'new/png/smod.png', coordinates: IMG_COORDS.smod });
+        map.addLayer({
+            id: 'smod-raster', type: 'raster', source: 'smod',
+            layout: { visibility: 'none' },
+            paint: { 'raster-opacity': 0.78, 'raster-resampling': 'nearest', 'raster-fade-duration': 0 },
+        });
+
+        /* ── 7. NASA Black Marble nighttime lights ── */
+        // Seasonal / January raster composites (magma)
+        map.addSource('ntl-winter', { type: 'image', url: BASE + 'new/png/ntl_winter.png', coordinates: IMG_COORDS.ntl });
+        map.addSource('ntl-summer', { type: 'image', url: BASE + 'new/png/ntl_summer.png', coordinates: IMG_COORDS.ntl });
+        map.addSource('ntl-2013',   { type: 'image', url: BASE + 'new/png/ntl_2013jan.png', coordinates: IMG_COORDS.ntl });
+        ['winter', 'summer', '2013'].forEach((v) => {
+            map.addLayer({
+                id: 'ntl-' + v, type: 'raster', source: 'ntl-' + v,
+                layout: { visibility: 'none' },
+                paint: { 'raster-opacity': 1, 'raster-resampling': 'linear', 'raster-fade-duration': 0 },
+            });
+        });
+        // 2021 annual points (graduated magma circles)
+        map.addSource('ntl-points-src', { type: 'geojson', data: BASE + 'new/blackmarble_lviv_2021_points.geojson' });
+        map.addLayer({
+            id: 'ntl-points', type: 'circle', source: 'ntl-points-src',
+            layout: { visibility: 'none' },
+            paint: {
+                'circle-radius': ['interpolate', ['linear'], ['zoom'],
+                    10, 1.6, 12, 3.2, 14, 6, 16, 11],
+                'circle-color': ['interpolate', ['linear'], ['to-number', ['get', 'NTL']],
+                    0.1, '#3b0f70', 1, '#8c2981', 3, '#de4968', 6, '#fe9f6d', 12, '#fcfdbf'],
+                'circle-opacity': 1,
+                'circle-blur': 0.35,
+            },
+        });
+
         // Street/place names on top, so they stay readable over the data layers.
         map.addLayer({ id: 'osm-labels-light-layer', type: 'raster', source: 'osm-labels-light' });
         map.addLayer({ id: 'osm-labels-layer', type: 'raster', source: 'osm-labels', paint: { 'raster-opacity': 1 } });
@@ -861,11 +1110,17 @@
         applyLayerVisibility();
     });
 
-    const ALL_MAP_LAYERS = ['wc-fill', 'bld-extrusion', 'urban-fill', 'urban-outline'];
+    const ALL_MAP_LAYERS = ['wc-fill', 'bld-extrusion', 'urban-fill', 'urban-outline',
+        'ndvi-raster', 'builtsurface-raster', 'smod-raster',
+        'ntl-winter', 'ntl-summer', 'ntl-2013', 'ntl-points'];
     const LAYER_VISIBLE = {
         land: ['wc-fill'],
         build: ['bld-extrusion'],
         urban: ['urban-fill', 'urban-outline'],
+        ntl: [],   // handled per-variant by applyNtlVariantVisibility()
+        builtsurface: ['builtsurface-raster'],
+        smod: ['smod-raster'],
+        ndvi: ['ndvi-raster'],
     };
 
     function applyLayerVisibility() {
@@ -874,6 +1129,7 @@
             if (!map.getLayer(id)) return;
             map.setLayoutProperty(id, 'visibility', visible.includes(id) ? 'visible' : 'none');
         });
+        if (activeLayer === 'ntl') applyNtlVariantVisibility();
         applyOpacity(layerOpacity[activeLayer]);
         // 3D camera only for buildings
         const targetPitch = activeLayer === 'build' ? (isMobile ? 45 : 55) : 0;
